@@ -427,7 +427,7 @@ const App: React.FC = () => {
     setChatMessages(prevMessages => [...prevMessages, userMessage, modelPlaceholderMessage]);
 
     try {
-      const response = await generateContentWithUrlContext(query, focusedFilesForChat, appSettings.systemPersona);
+      const response = await generateContentWithUrlContext(query, focusedFilesForChat, appSettings.systemPersona, chatMessages, appSettings.userPersona);
       const replyText = response.text || "I've reviewed the documents, but couldn't find a matching answer for this query.";
       
       setChatMessages(prevMessages =>
@@ -538,12 +538,23 @@ const App: React.FC = () => {
       </div>
 
       {/* Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={appSettings}
-        onSaveSettings={handleSaveSettings}
-      />
+      {(() => {
+        const totalDocuments = fileGroups.reduce((acc, g) => acc + g.files.length, 0);
+        const totalFileChars = fileGroups.reduce((acc, g) => acc + g.files.reduce((fa, f) => fa + (f.content?.length || 0), 0), 0);
+        const totalChatChars = chatMessages.reduce((acc, m) => acc + (m.text?.length || 0), 0);
+        const estimatedTokens = Math.round((totalFileChars + totalChatChars) / 4);
+
+        return (
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            settings={appSettings}
+            onSaveSettings={handleSaveSettings}
+            totalDocuments={totalDocuments}
+            estimatedTokens={estimatedTokens}
+          />
+        );
+      })()}
     </div>
   );
 };

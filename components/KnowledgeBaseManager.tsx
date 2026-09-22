@@ -4,8 +4,9 @@
 */
 
 import React, { useRef, useState } from 'react';
-import { Upload, Trash2, ChevronDown, X, Edit2, Check, AlertCircle, FileText, RefreshCw, SkipForward, Loader2 } from 'lucide-react';
+import { Upload, Trash2, ChevronDown, X, Edit2, Check, AlertCircle, FileText, RefreshCw, SkipForward, Loader2, Folder, Search } from 'lucide-react';
 import { FileGroup, LocalFile } from '../types';
+import { GoogleDriveImportModal } from './GoogleDriveImportModal';
 
 interface KnowledgeBaseManagerProps {
   files: LocalFile[];
@@ -37,6 +38,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
   onToggleAllFocus,
   onRenameGroup,
 }) => {
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -44,6 +46,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
   const [duplicateQueue, setDuplicateQueue] = useState<DuplicateConflict[]>([]);
   const [currentDuplicateIndex, setCurrentDuplicateIndex] = useState(0);
   const [stagedFiles, setStagedFiles] = useState<LocalFile[]>([]);
+  const [docSearchQuery, setDocSearchQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const readSingleFile = async (file: File): Promise<string> => {
@@ -293,33 +296,66 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
             </>
           )}
         </label>
+
+        {/* Google Drive Import Button */}
+        <button
+          onClick={() => setIsDriveModalOpen(true)}
+          className="flex items-center justify-center gap-2 h-10 px-4 bg-[#4285F4]/15 hover:bg-[#4285F4]/25 border border-[#4285F4]/30 text-[#8AB4F8] rounded-lg transition-colors text-sm w-full cursor-pointer font-medium"
+        >
+          <Folder size={16} className="text-[#4285F4]" />
+          <span>Import from Google Drive</span>
+        </button>
       </div>
       {error && <p className="text-xs text-[#f87171] mb-2">{error}</p>}
+
+      {/* Google Drive Import Modal */}
+      <GoogleDriveImportModal
+        isOpen={isDriveModalOpen}
+        onClose={() => setIsDriveModalOpen(false)}
+        onImportFiles={(newFiles) => {
+          onAddFiles(newFiles);
+        }}
+      />
       
       {files.length > 0 && (
-        <div className="flex items-center justify-between mb-2 px-2 py-1 bg-[#2C2C2C] border border-[rgba(255,255,255,0.05)] rounded-md">
-          <label className="flex items-center gap-2 text-sm text-[#E2E2E2] cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={files.every(f => f.inFocus !== false)} 
-              ref={input => { 
-                if (input) {
-                  const allFocused = files.every(f => f.inFocus !== false);
-                  const someFocused = files.some(f => f.inFocus !== false) && !allFocused;
-                  input.indeterminate = someFocused;
-                }
-              }} 
-              onChange={(e) => onToggleAllFocus(e.target.checked)} 
-              className="accent-[#79B8FF] cursor-pointer" 
+        <>
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#888]" size={14} />
+            <input
+              type="text"
+              placeholder="Search documents by name..."
+              value={docSearchQuery}
+              onChange={(e) => setDocSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-[#2C2C2C] border border-[rgba(255,255,255,0.08)] rounded-md text-xs text-[#E2E2E2] placeholder-[#777] focus:ring-1 focus:ring-[#79B8FF] focus:border-[#79B8FF] outline-none transition-colors"
             />
-            <span className="text-xs font-medium">Select All</span>
-          </label>
-          <span className="text-xs text-[#A8ABB4]">{files.filter(f => f.inFocus !== false).length} / {files.length} in focus</span>
-        </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-2 px-2 py-1 bg-[#2C2C2C] border border-[rgba(255,255,255,0.05)] rounded-md">
+            <label className="flex items-center gap-2 text-sm text-[#E2E2E2] cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={files.every(f => f.inFocus !== false)} 
+                ref={input => { 
+                  if (input) {
+                    const allFocused = files.every(f => f.inFocus !== false);
+                    const someFocused = files.some(f => f.inFocus !== false) && !allFocused;
+                    input.indeterminate = someFocused;
+                  }
+                }} 
+                onChange={(e) => onToggleAllFocus(e.target.checked)} 
+                className="accent-[#79B8FF] cursor-pointer" 
+              />
+              <span className="text-xs font-medium">Select All</span>
+            </label>
+            <span className="text-xs text-[#A8ABB4]">{files.filter(f => f.inFocus !== false).length} / {files.length} in focus</span>
+          </div>
+        </>
       )}
 
       <div className="flex-grow overflow-y-auto space-y-2 chat-container">
-        {files.map((file) => (
+        {files
+          .filter(f => f.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
+          .map((file) => (
           <div key={file.name} className={`flex items-center justify-between p-2.5 bg-[#2C2C2C] border ${file.inFocus !== false ? 'border-[rgba(255,255,255,0.15)]' : 'border-[rgba(255,255,255,0.02)] opacity-70'} rounded-lg hover:shadow-sm transition-all`}>
             <label className="flex items-center gap-2 cursor-pointer flex-grow overflow-hidden">
               <input 

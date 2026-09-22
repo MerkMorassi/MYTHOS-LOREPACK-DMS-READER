@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UrlContextMetadataItem, DocumentCitation, LocalFile } from '../types';
+import { UrlContextMetadataItem, DocumentCitation, LocalFile, ChatMessage } from '../types';
 
 interface GeminiResponse {
   text: string;
@@ -45,9 +45,11 @@ async function safeFetchJson(url: string, payload: any): Promise<any> {
 export const generateContentWithUrlContext = async (
   prompt: string,
   files: LocalFile[],
-  systemPersona?: string
+  systemPersona?: string,
+  chatHistory?: ChatMessage[],
+  userPersona?: string
 ): Promise<GeminiResponse> => {
-  const data = await safeFetchJson("/api/gemini/generate", { prompt, files, systemPersona });
+  const data = await safeFetchJson("/api/gemini/generate", { prompt, files, systemPersona, chatHistory, userPersona });
   return { 
     text: data.text, 
     citations: data.citations || [], 

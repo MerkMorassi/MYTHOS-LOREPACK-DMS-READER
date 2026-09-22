@@ -50,5 +50,6 @@ export type GeminiVoiceName = 'Aoede' | 'Kore' | 'Puck' | 'Charon' | 'Fenrir' | 
 export interface AppSettings {
   voiceName: GeminiVoiceName;
   systemPersona: string;
+  userPersona: string;
   autoPlayTts: boolean;
 }

@@ -6,7 +6,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, MessageSender, LocalFile } from '../types'; 
 import MessageItem from './MessageItem';
-import { Send, Menu, Trash2, Download, Settings, Mic, MicOff, Search, Loader2, X, FileText, Layers, Check, ChevronDown, ChevronUp, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Send, Menu, Trash2, Download, Settings, Mic, MicOff, Search, Loader2, X, FileText, Layers, Check, ChevronDown, ChevronUp, AlertCircle, Eye, EyeOff, CloudUpload, History } from 'lucide-react';
+import { GoogleDriveExportModal } from './GoogleDriveExportModal';
+import { ChatHistorySearchModal } from './ChatHistorySearchModal';
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
@@ -68,6 +70,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [userQuery, setUserQuery] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
   const [isContextDrawerOpen, setIsContextDrawerOpen] = useState(false);
+  const [isDriveExportOpen, setIsDriveExportOpen] = useState(false);
+  const [isHistorySearchOpen, setIsHistorySearchOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const toggleLive = onToggleLiveChat || onOpenLiveChat;
@@ -154,6 +158,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <Settings size={18} />
             </button>
           )}
+          <button
+            onClick={() => setIsHistorySearchOpen(true)}
+            className="p-1.5 text-[#A8ABB4] hover:text-[#79B8FF] rounded-md hover:bg-[#79B8FF]/10 transition-colors flex items-center gap-1.5 text-sm font-medium"
+            aria-label="Search chat history archive"
+            title="Search past chat history"
+          >
+            <History size={16} />
+            <span className="hidden sm:inline">Archive</span>
+          </button>
           {onExportChat && messages.length > 1 && (
             <button
               onClick={onExportChat}
@@ -165,6 +178,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <span className="hidden sm:inline">Export</span>
             </button>
           )}
+          <button
+            onClick={() => setIsDriveExportOpen(true)}
+            className="p-1.5 text-[#4285F4] hover:text-white rounded-md hover:bg-[#4285F4]/20 transition-colors flex items-center gap-1.5 text-sm font-medium border border-[#4285F4]/30"
+            aria-label="Save logs and chat history to Google Drive"
+            title="Save chat and logs to Google Drive"
+          >
+            <CloudUpload size={16} />
+            <span className="hidden sm:inline">Save to G Drive</span>
+          </button>
           {onClearChat && messages.length > 1 && (
             <button
               onClick={onClearChat}
@@ -517,6 +539,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Google Drive Export Modal */}
+      <GoogleDriveExportModal
+        isOpen={isDriveExportOpen}
+        onClose={() => setIsDriveExportOpen(false)}
+        chatMessages={messages}
+        systemPersona={voiceName} // or systemPersona
+      />
+
+      {/* Chat History Archive Search Modal */}
+      <ChatHistorySearchModal
+        isOpen={isHistorySearchOpen}
+        onClose={() => setIsHistorySearchOpen(false)}
+      />
     </div>
   );
 };

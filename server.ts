@@ -65,7 +65,7 @@ async function startServer() {
   const isRateLimitError = (err: any): boolean => {
     const status = err?.status || err?.code || err?.error?.code;
     const msg = typeof err?.message === "string" ? err.message : JSON.stringify(err || "");
-    return status === 429 || status === "RESOURCE_EXHAUSTED" || msg.includes("quota") || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED");
+    return status === 429 || status === 503 || status === "RESOURCE_EXHAUSTED" || msg.includes("quota") || msg.includes("429") || msg.includes("503") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("demand");
   };
 
   // Helper for resilient generation with fallback for high demand (503/429)
@@ -142,11 +142,27 @@ async function startServer() {
 
   app.post("/api/gemini/generate", async (req, res) => {
     try {
-      const { prompt, files, systemPersona } = req.body;
+      const { prompt, files, systemPersona, chatHistory, userPersona } = req.body;
       
-      let baseInstruction = systemPersona || "You are an expert RAG knowledge base assistant.";
-      let fullPrompt = prompt;
+      let baseInstruction = systemPersona || "You are an expert RAG knowledge base assistant with persistent AI Persona memory.";
+      if (userPersona) {
+        baseInstruction += `\n\n[USER PERSONA / BACKGROUND CONTEXT]:\n${userPersona}`;
+      }
+
+      let fullPrompt = "";
       const validFiles = Array.isArray(files) ? files : [];
+      const history = Array.isArray(chatHistory) ? chatHistory : [];
+
+      if (history.length > 0) {
+        // Include recent timestamped chat turns for persona persistence and memory
+        const recentHistory = history.slice(-20); // Last 20 messages for context window efficiency
+        const historyText = recentHistory.map((msg: any) => {
+          const sender = msg.sender === 'user' ? 'User' : (msg.sender === 'model' ? 'Assistant' : 'System');
+          const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
+          return `[${time}] ${sender}: ${msg.text}`;
+        }).join('\n');
+        fullPrompt += `[CONVERSATION HISTORY & PERSISTENCE]:\n${historyText}\n\n`;
+      }
 
       if (validFiles.length > 0) {
         const fileNames = validFiles.map((f: any, idx: number) => `${idx + 1}. ${f.name}`).join("\n");
@@ -161,8 +177,10 @@ async function startServer() {
           return `=== DOCUMENT: ${f.name} ===\n${truncated}`;
         }).join('\n\n');
 
-        fullPrompt = `[DOCUMENTS IN FOCUS (${validFiles.length} files)]:\n${fileContents}\n\n[USER QUERY]:\n${prompt}`;
+        fullPrompt += `[DOCUMENTS IN FOCUS (${validFiles.length} files)]:\n${fileContents}\n\n`;
       }
+
+      fullPrompt += `[CURRENT USER QUERY]:\n${prompt}`;
 
       const response = await generateWithFallback({
         contents: fullPrompt,

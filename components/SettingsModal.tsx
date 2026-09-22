@@ -14,6 +14,8 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: AppSettings;
   onSaveSettings: (newSettings: AppSettings) => void;
+  totalDocuments?: number;
+  estimatedTokens?: number;
 }
 
 const VOICE_OPTIONS: { id: GeminiVoiceName; name: string; desc: string; tone: string }[] = [
@@ -28,6 +30,7 @@ const VOICE_OPTIONS: { id: GeminiVoiceName; name: string; desc: string; tone: st
 export const DEFAULT_SETTINGS: AppSettings = {
   voiceName: 'Aoede',
   systemPersona: 'You are an intelligent RAG knowledge base assistant. Answer questions thoroughly and accurately using the provided documents in focus. Ground all factual assertions in the referenced texts.',
+  userPersona: 'I am a technical researcher exploring knowledge bases and documentation.',
   autoPlayTts: false,
 };
 
@@ -36,9 +39,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onSaveSettings,
+  totalDocuments = 0,
+  estimatedTokens = 0,
 }) => {
   const [selectedVoice, setSelectedVoice] = useState<GeminiVoiceName>(settings.voiceName || 'Aoede');
   const [persona, setPersona] = useState<string>(settings.systemPersona || DEFAULT_SETTINGS.systemPersona);
+  const [userPersona, setUserPersona] = useState<string>(settings.userPersona || DEFAULT_SETTINGS.userPersona);
   const [autoPlay, setAutoPlay] = useState<boolean>(settings.autoPlayTts || false);
   const [testingVoice, setTestingVoice] = useState<string | null>(null);
 
@@ -74,6 +80,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onSaveSettings({
       voiceName: selectedVoice,
       systemPersona: persona,
+      userPersona: userPersona,
       autoPlayTts: autoPlay,
     });
     onClose();
@@ -82,6 +89,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleReset = () => {
     setSelectedVoice(DEFAULT_SETTINGS.voiceName);
     setPersona(DEFAULT_SETTINGS.systemPersona);
+    setUserPersona(DEFAULT_SETTINGS.userPersona);
     setAutoPlay(DEFAULT_SETTINGS.autoPlayTts);
   };
 
@@ -108,6 +116,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Body */}
         <div className="p-5 overflow-y-auto space-y-6 flex-1 text-sm text-[#E2E2E2]">
+          {/* Summary Dashboard */}
+          <div className="bg-[#252525] border border-[rgba(255,255,255,0.08)] rounded-xl p-4">
+            <h4 className="font-semibold text-xs text-[#A8ABB4] uppercase tracking-wider mb-3">Session Summary Dashboard</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#1E1E1E] p-3 rounded-lg border border-white/5">
+                <span className="text-2xl font-bold text-white">{totalDocuments}</span>
+                <p className="text-xs text-[#A8ABB4] mt-0.5">Documents Processed</p>
+              </div>
+              <div className="bg-[#1E1E1E] p-3 rounded-lg border border-white/5">
+                <span className="text-2xl font-bold text-[#79B8FF]">{estimatedTokens.toLocaleString()}</span>
+                <p className="text-xs text-[#A8ABB4] mt-0.5">Est. Tokens Used</p>
+              </div>
+            </div>
+          </div>
+
           {/* AI Voice Selection */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -190,6 +213,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               rows={3}
               className="w-full p-3 bg-[#2C2C2C] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs text-[#E2E2E2] placeholder-[#777] focus:ring-1 focus:ring-[#79B8FF] focus:border-[#79B8FF] outline-none transition-colors"
               placeholder="e.g., You are a meticulous technical documentation assistant..."
+            />
+          </div>
+
+          {/* User Persona / Background Metadata Field */}
+          <div>
+            <label className="block font-medium text-sm text-white mb-1">
+              User Persona / Background (Dedicated Metadata Field)
+            </label>
+            <p className="text-xs text-[#A8ABB4] mb-2">
+              Persistent user background/context sent with every request so the agent tailors responses to your role.
+            </p>
+            <textarea
+              value={userPersona}
+              onChange={(e) => setUserPersona(e.target.value)}
+              rows={2}
+              className="w-full p-3 bg-[#2C2C2C] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs text-[#E2E2E2] placeholder-[#777] focus:ring-1 focus:ring-[#79B8FF] focus:border-[#79B8FF] outline-none transition-colors"
+              placeholder="e.g., Senior Software Architect specializing in distributed systems..."
             />
           </div>
 
