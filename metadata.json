@@ -1,0 +1,11 @@
+{
+  "name": "Remix: Chat with Docs",
+  "description": "See the file context in action. Chat with Gemini to explore uploaded text files.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": "",
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
